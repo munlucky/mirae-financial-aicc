@@ -1,0 +1,7 @@
+{
+  "name": "Mirae Financial AICC",
+  "description": "Next-generation AI Contact Center interface for Customers and Agents, featuring real-time voice interaction and high-density data dashboards.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
