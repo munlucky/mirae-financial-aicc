@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { ArrowLeft, Plus, Phone, PhoneOff, LogOut, Search, MoreVertical, Mic, Send, Edit3, Clipboard, ShieldCheck, ChevronDown, CheckCircle, Bell, X, ChevronUp, Save, Loader2 } from 'lucide-react';
 import { Badge } from '../Badge';
 import { Button } from '../Button';
 import { Input } from '../Input';
 import { Message } from '../../types';
+import '../../styles/animations.css';
 
 interface Props {
   onBack: () => void;
@@ -47,24 +48,33 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Load memo on mount
+  // Load memo on mount with error handling
   useEffect(() => {
-    const savedMemo = localStorage.getItem('agent_workspace_memo');
-    if (savedMemo) {
-      setMemo(savedMemo);
-      setSaveStatus('saved');
+    try {
+      const savedMemo = localStorage.getItem('agent_workspace_memo');
+      if (savedMemo) {
+        setMemo(savedMemo);
+        setSaveStatus('saved');
+      }
+    } catch (error) {
+      console.warn('Failed to load memo from localStorage:', error);
     }
   }, []);
 
-  // Auto-save memo logic
+  // Auto-save memo logic with error handling
   useEffect(() => {
-    if (saveStatus === 'idle' && !memo) return; 
+    if (saveStatus === 'idle' && !memo) return;
 
     setSaveStatus('saving');
     const timer = setTimeout(() => {
-      localStorage.setItem('agent_workspace_memo', memo);
-      setSaveStatus('saved');
-      setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      try {
+        localStorage.setItem('agent_workspace_memo', memo);
+        setSaveStatus('saved');
+        setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch (error) {
+        console.warn('Failed to save memo to localStorage:', error);
+        setSaveStatus('idle'); // Reset status on error
+      }
     }, 2000); // Auto-save after 2 seconds of inactivity
 
     return () => clearTimeout(timer);
@@ -104,8 +114,8 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
     messageRefs.current[matchingIds[newIdx]]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // Text highlighting helper
-  const HighlightText = ({ text, highlight }: { text: string, highlight: string }) => {
+  // Text highlighting helper (memoized for performance)
+  const HighlightText = memo(({ text, highlight }: { text: string, highlight: string }) => {
     if (!highlight.trim()) {
       return <span>{text}</span>;
     }
@@ -113,12 +123,13 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
     const parts = text.split(regex);
     return (
       <span>
-        {parts.map((part, i) => 
+        {parts.map((part, i) =>
           regex.test(part) ? <mark key={i} className="bg-yellow-300 text-gray-900 rounded-sm px-0.5 font-semibold">{part}</mark> : part
         )}
       </span>
     );
-  };
+  });
+  HighlightText.displayName = 'HighlightText';
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden relative">
@@ -457,22 +468,6 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
         </aside>
 
       </div>
-      <style>{`
-        @keyframes slide-in-right {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out forwards;
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 };

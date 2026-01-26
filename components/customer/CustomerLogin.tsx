@@ -1,7 +1,26 @@
 import React, { useState } from 'react';
 import { Button } from '../Button';
 import { Input } from '../Input';
-import { Eye, EyeOff, User, Lock, Fingerprint } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, Fingerprint, AlertCircle } from 'lucide-react';
+
+// 입력 유효성 검증 함수
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validatePassword = (password: string): { valid: boolean; message?: string } => {
+  if (password.length < 8) {
+    return { valid: false, message: '비밀번호는 8자 이상이어야 합니다.' };
+  }
+  if (!/[A-Za-z]/.test(password)) {
+    return { valid: false, message: '비밀번호에 영문자가 포함되어야 합니다.' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: '비밀번호에 숫자가 포함되어야 합니다.' };
+  }
+  return { valid: true };
+};
 
 interface Props {
   onLogin: () => void;
@@ -11,10 +30,55 @@ export const CustomerLogin: React.FC<Props> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin();
+
+    // 입력값 검증
+    let hasError = false;
+
+    // 아이디(이메일) 검증
+    if (!username.trim()) {
+      setUsernameError('아이디를 입력해주세요.');
+      hasError = true;
+    } else if (!validateEmail(username)) {
+      setUsernameError('올바른 이메일 형식이 아닙니다.');
+      hasError = true;
+    } else {
+      setUsernameError('');
+    }
+
+    // 비밀번호 검증
+    if (!password) {
+      setPasswordError('비밀번호를 입력해주세요.');
+      hasError = true;
+    } else {
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        setPasswordError(passwordValidation.message || '비밀번호 형식이 올바르지 않습니다.');
+        hasError = true;
+      } else {
+        setPasswordError('');
+      }
+    }
+
+    // 검증 통과 시 로그인 처리
+    if (!hasError) {
+      onLogin();
+    }
+  };
+
+  // 입력 시 에러 메시지 초기화
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    if (usernameError) setUsernameError('');
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (passwordError) setPasswordError('');
   };
 
   return (
@@ -31,24 +95,38 @@ export const CustomerLogin: React.FC<Props> = ({ onLogin }) => {
 
         {/* Form Area */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input 
-            label="아이디" 
-            placeholder="example@mail.com" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            icon={<User size={16} />}
-          />
-          
+          <div>
+            <Input
+              label="아이디"
+              placeholder="example@mail.com"
+              value={username}
+              onChange={(e) => handleUsernameChange(e.target.value)}
+              icon={<User size={16} />}
+            />
+            {usernameError && (
+              <p className="mt-1 text-xs text-red flex items-center gap-1">
+                <AlertCircle size={12} />
+                {usernameError}
+              </p>
+            )}
+          </div>
+
           <div className="relative">
-            <Input 
-              label="비밀번호" 
-              type={showPassword ? "text" : "password"} 
+            <Input
+              label="비밀번호"
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => handlePasswordChange(e.target.value)}
               icon={<Lock size={16} />}
             />
-            <button 
+            {passwordError && (
+              <p className="mt-1 text-xs text-red flex items-center gap-1">
+                <AlertCircle size={12} />
+                {passwordError}
+              </p>
+            )}
+            <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-[28px] text-gray-400 hover:text-gray-600"

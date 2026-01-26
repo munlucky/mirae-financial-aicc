@@ -1,7 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { ArrowLeft, MoreVertical, Info, Mic, Send, Volume2, ChevronDown, Check, CheckCheck, Pause, Square, Paperclip, FileText, X, Play, StopCircle, Image as ImageIcon, Music, File, Download } from 'lucide-react';
 import { Message, VoiceState } from '../../types';
 import { Badge } from '../Badge';
+import {
+  READ_RECEIPT_DELAY,
+  AI_RESPONSE_BASE_DELAY,
+  AI_RESPONSE_RANDOM_DELAY,
+  FILE_RESPONSE_DELAY,
+  VOICE_PROCESSING_DELAY,
+} from '../../lib/constants/timing';
+import '../../styles/animations.css';
 
 interface Props {
   onBack: () => void;
@@ -73,21 +81,33 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load chat from localStorage
+  // Load chat from localStorage with error handling
   useEffect(() => {
-    const savedChat = localStorage.getItem('mirae_chat_history');
-    if (savedChat) {
-      try {
-        setMessages(JSON.parse(savedChat));
-      } catch (e) {
-        console.error("Failed to load chat history", e);
+    try {
+      const savedChat = localStorage.getItem('mirae_chat_history');
+      if (savedChat) {
+        try {
+          setMessages(JSON.parse(savedChat));
+        } catch {
+          // Invalid chat history format, reset to initial messages
+          setMessages(initialMessages);
+          localStorage.removeItem('mirae_chat_history');
+        }
       }
+    } catch (error) {
+      // localStorage access failed (e.g., Safari private mode)
+      console.warn('localStorage access failed:', error);
     }
   }, []);
 
-  // Save chat to localStorage
+  // Save chat to localStorage with error handling
   useEffect(() => {
-    localStorage.setItem('mirae_chat_history', JSON.stringify(messages));
+    try {
+      localStorage.setItem('mirae_chat_history', JSON.stringify(messages));
+    } catch (error) {
+      // localStorage access failed (e.g., quota exceeded, private mode)
+      console.warn('Failed to save chat history:', error);
+    }
   }, [messages]);
 
   const scrollToBottom = () => {
@@ -119,7 +139,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
     // Simulate Read Receipt
     setTimeout(() => {
        setMessages(prev => prev.map(m => m.id === newMessage.id ? { ...m, read: true } : m));
-    }, 800);
+    }, READ_RECEIPT_DELAY);
     
     // AI Auto-Reply Logic
     setTimeout(() => {
@@ -134,7 +154,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
         confidence: 'high',
         quickReplies: aiResponse.quickReplies
       }]);
-    }, 1500 + Math.random() * 1000); 
+    }, AI_RESPONSE_BASE_DELAY + Math.random() * AI_RESPONSE_RANDOM_DELAY); 
   };
 
   // File Attachment Logic with Image Preview
@@ -166,13 +186,13 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
           setMessages(prev => [...prev, {
             id: (Date.now() + 1).toString(),
             sender: 'ai',
-            text: isImage 
+            text: isImage
               ? `보내주신 사진(${file.name}) 잘 받았습니다. 이미지를 분석하여 처리하겠습니다.`
               : `파일(${file.name})을 정상적으로 수신했습니다. 내용을 분석하여 곧 안내드리겠습니다.`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             confidence: 'high'
           }]);
-        }, 2000);
+        }, FILE_RESPONSE_DELAY);
       };
 
       if (isImage) {
@@ -235,7 +255,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
       setTimeout(() => {
         setVoiceState(VoiceState.COMPLETE);
         setInputValue("집 수리비로 5천만원 정도 필요해요.");
-      }, 1500);
+      }, VOICE_PROCESSING_DELAY);
     }
   }, [voiceState]);
 
@@ -527,23 +547,6 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
           </button>
         </div>
       </div>
-      
-      <style>{`
-        @keyframes waveform {
-          0%, 100% { height: 20%; opacity: 0.5; }
-          50% { height: 100%; opacity: 1; }
-        }
-        .animate-waveform {
-          animation: waveform 0.8s infinite ease-in-out;
-        }
-        .animate-fade-in-up {
-           animation: fadeInUp 0.3s ease-out forwards;
-        }
-        @keyframes fadeInUp {
-           from { opacity: 0; transform: translateY(10px); }
-           to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };
