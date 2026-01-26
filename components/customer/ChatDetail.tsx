@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { ArrowLeft, MoreVertical, Info, Mic, Send, Volume2, ChevronDown, Check, CheckCheck, Pause, Square, Paperclip, FileText, X, Play, StopCircle, Image as ImageIcon, Music, File, Download } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Info, Mic, Send, Volume2, ChevronDown, Check, CheckCheck, Pause, Square, Paperclip, FileText, X, Play, StopCircle, Image as ImageIcon, Music, File, Download, AlertCircle } from 'lucide-react';
 import { Message, VoiceState } from '../../types';
 import { Badge } from '../Badge';
 import {
@@ -9,6 +9,9 @@ import {
   FILE_RESPONSE_DELAY,
   VOICE_PROCESSING_DELAY,
 } from '../../lib/constants/timing';
+import { createSpeechRecognition } from '../../lib/services/speechRecognition';
+import { createSpeechSynthesis } from '../../lib/services/speechSynthesis';
+import type { SpeechRecognitionResult } from '../../types/speech';
 import '../../styles/animations.css';
 
 interface Props {
@@ -75,11 +78,56 @@ const getSmartResponse = (input: string) => {
 export const ChatDetail: React.FC<Props> = ({ onBack }) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
+  const [interimText, setInterimText] = useState('');
   const [voiceState, setVoiceState] = useState<VoiceState>(VoiceState.IDLE);
   const [isTyping, setIsTyping] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [recognitionError, setRecognitionError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sttServiceRef = useRef<ReturnType<typeof createSpeechRecognition> | null>(null);
+  const ttsServiceRef = useRef<ReturnType<typeof createSpeechSynthesis> | null>(null);
+
+  // Initialize Speech Services
+  useEffect(() => {
+    // Initialize STT service
+    sttServiceRef.current = createSpeechRecognition(
+      {
+        onResult: (result: SpeechRecognitionResult) => {
+          setInterimText('');
+          setInputValue(result.transcript);
+          setVoiceState(VoiceState.COMPLETE);
+        },
+        onInterimResult: (result: SpeechRecognitionResult) => {
+          setInterimText(result.transcript);
+        },
+        onError: (error) => {
+          setRecognitionError(error.message);
+          setVoiceState(VoiceState.IDLE);
+          setInterimText('');
+          // Auto-hide error after 3 seconds
+          setTimeout(() => setRecognitionError(null), 3000);
+        },
+        onStart: () => {
+          setInterimText('');
+          setRecognitionError(null);
+        },
+        onEnd: () => {
+          // Voice state will be updated by onResult
+        },
+      },
+      { lang: 'ko-KR', continuous: false, interimResults: true }
+    );
+
+    // Initialize TTS service
+    ttsServiceRef.current = createSpeechSynthesis({ lang: 'ko-KR' });
+
+    // Cleanup
+    return () => {
+      sttServiceRef.current?.destroy();
+      ttsServiceRef.current?.destroy();
+    };
+  }, []);
 
   // Load chat from localStorage with error handling
   useEffect(() => {
@@ -220,48 +268,62 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
     return { icon, ext: ext?.toUpperCase() || 'FILE' };
   };
 
-  // Text-to-Speech Logic
+  // Text-to-Speech Logic (TTS)
   const toggleSpeech = (msg: Message) => {
+    if (!ttsServiceRef.current) return;
+
     if (playingMessageId === msg.id) {
-      window.speechSynthesis.cancel();
+      ttsServiceRef.current.cancel();
       setPlayingMessageId(null);
     } else {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(msg.text);
-      utterance.lang = 'ko-KR';
-      utterance.onend = () => setPlayingMessageId(null);
-      window.speechSynthesis.speak(utterance);
+      ttsServiceRef.current.cancel();
+      ttsServiceRef.current.speak(msg.text);
       setPlayingMessageId(msg.id);
+
+      // Reset playing state when speech ends
+      const checkEnd = setInterval(() => {
+        if (!ttsServiceRef.current?.isSpeaking()) {
+          setPlayingMessageId(null);
+          clearInterval(checkEnd);
+        }
+      }, 100);
     }
   };
 
-  // Improved Voice Interaction Logic
+  // Improved Voice Interaction Logic (STT)
   const handleMicClick = () => {
+    if (!sttServiceRef.current) return;
+
     if (voiceState === VoiceState.IDLE) {
       setVoiceState(VoiceState.LISTENING);
+      sttServiceRef.current.start();
     } else if (voiceState === VoiceState.LISTENING) {
       setVoiceState(VoiceState.PAUSED);
+      sttServiceRef.current.stop();
     } else if (voiceState === VoiceState.PAUSED) {
       setVoiceState(VoiceState.LISTENING);
+      sttServiceRef.current.start();
     }
   };
 
   const finishVoice = () => {
-     setVoiceState(VoiceState.PROCESSING);
+    setVoiceState(VoiceState.PROCESSING);
+    sttServiceRef.current?.stop();
   };
-
-  useEffect(() => {
-    if (voiceState === VoiceState.PROCESSING) {
-      setTimeout(() => {
-        setVoiceState(VoiceState.COMPLETE);
-        setInputValue("집 수리비로 5천만원 정도 필요해요.");
-      }, VOICE_PROCESSING_DELAY);
-    }
-  }, [voiceState]);
 
   const closeVoiceUI = () => {
     setVoiceState(VoiceState.IDLE);
+    setInterimText('');
+    setRecognitionError(null);
+    sttServiceRef.current?.stop();
   };
+
+  // Auto-reset voice state when sending
+  useEffect(() => {
+    if (voiceState === VoiceState.IDLE && interimText) {
+      setInterimText('');
+    }
+  }, [voiceState, interimText]);
 
   // Waveform generation for visual effect
   const waveformBars = [40, 70, 100, 60, 80, 40, 90, 50, 70, 100, 60, 40, 80, 50, 90];
@@ -411,7 +473,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
         {/* Voice UI Overlay (Inline) */}
         {voiceState !== VoiceState.IDLE && (
            <div className="w-full mb-4 animate-fade-in-up sticky bottom-0 z-30">
-              <div 
+              <div
                 className={`
                 w-full rounded-2xl p-5 flex flex-col items-center justify-center gap-4 transition-all duration-300 relative overflow-hidden shadow-xl
                 ${(voiceState === VoiceState.LISTENING || voiceState === VoiceState.PAUSED) ? 'bg-primary text-white' : ''}
@@ -419,7 +481,15 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
                 ${voiceState === VoiceState.COMPLETE ? 'bg-emerald text-white cursor-pointer' : ''}
               `}>
                 {voiceState === VoiceState.COMPLETE && <div className="absolute inset-0 z-0 bg-emerald-500"></div>}
-                
+
+                {/* Recognition Error Display */}
+                {recognitionError && (
+                  <div className="w-full bg-red-500/90 text-white px-4 py-3 rounded-xl flex items-start gap-3 backdrop-blur-sm">
+                    <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                    <p className="text-xs font-medium">{recognitionError}</p>
+                  </div>
+                )}
+
                 {(voiceState === VoiceState.LISTENING || voiceState === VoiceState.PAUSED) && (
                   <>
                     <div className="flex items-center justify-between w-full z-10">
@@ -428,8 +498,15 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
                           {voiceState === VoiceState.PAUSED && <Pause size={16} className="fill-white" />}
                           <span className="font-bold text-base tracking-wide">{voiceState === VoiceState.LISTENING ? '듣고 있어요...' : '일시정지됨'}</span>
                         </div>
-                        <span className="text-xs font-mono opacity-80">00:05</span>
+                        <span className="text-xs font-mono opacity-80">{sttServiceRef.current?.getState() === 'listening' ? '00:00' : '00:00'}</span>
                     </div>
+
+                    {/* Interim Text Display */}
+                    {interimText && (
+                      <div className="w-full bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3">
+                        <p className="text-sm text-white/90">{interimText}</p>
+                      </div>
+                    )}
                     
                     {voiceState === VoiceState.LISTENING && (
                       <div className="w-full h-16 flex items-center justify-center gap-1.5 z-0 opacity-90 my-2">
@@ -477,6 +554,12 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
                       </div>
                       <span className="font-bold text-lg">음성 인식 완료</span>
                     </div>
+                    {/* Recognized Text Display */}
+                    {inputValue && (
+                      <div className="w-full bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 mb-2">
+                        <p className="text-sm text-white">{inputValue}</p>
+                      </div>
+                    )}
                     <div className="flex gap-3 w-full px-2">
                        <button 
                          onClick={() => handleSend('text')}

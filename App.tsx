@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { CustomerLogin } from './components/customer/CustomerLogin';
-import { ChatHome } from './components/customer/ChatHome';
-import { ChatDetail } from './components/customer/ChatDetail';
-import { AgentDashboard } from './components/agent/AgentDashboard';
-import { AgentWorkspace } from './components/agent/AgentWorkspace';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { UserRole } from './types';
+import { useChatStore } from './lib/store/chatStore';
+import { useAgentStore } from './lib/store/agentStore';
+
+// 코드 분할: 동적 import
+const CustomerLogin = lazy(() => import('./components/customer/CustomerLogin'));
+const ChatHome = lazy(() => import('./components/customer/ChatHome'));
+const ChatDetail = lazy(() => import('./components/customer/ChatDetail'));
+const AgentDashboard = lazy(() => import('./components/agent/AgentDashboard'));
+const AgentWorkspace = lazy(() => import('./components/agent/AgentWorkspace'));
 
 // App State Management
 enum Screen {
@@ -18,6 +22,24 @@ enum Screen {
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.LOGIN);
   const [role, setRole] = useState<UserRole | null>(null);
+
+  // WebSocket 연결 관리
+  const connectWebSocket = useChatStore((state) => state.connectWebSocket);
+  const disconnectWebSocket = useChatStore((state) => state.disconnectWebSocket);
+  const connectAgentWebSocket = useAgentStore((state) => state.connectWebSocket);
+  const disconnectAgentWebSocket = useAgentStore((state) => state.disconnectWebSocket);
+
+  // 앱 마운트 시 WebSocket 연결
+  useEffect(() => {
+    connectWebSocket();
+    connectAgentWebSocket();
+
+    // 앱 언마운트 시 WebSocket 연결 해제
+    return () => {
+      disconnectWebSocket();
+      disconnectAgentWebSocket();
+    };
+  }, [connectWebSocket, disconnectWebSocket, connectAgentWebSocket, disconnectAgentWebSocket]);
 
   const handleLogin = (selectedRole: UserRole) => {
     setRole(selectedRole);
@@ -48,7 +70,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-      {renderScreen()}
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">로딩 중...</div>}>
+        {renderScreen()}
+      </Suspense>
 
       {/* Development Role Switcher Overlay */}
       <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 opacity-30 hover:opacity-100 transition-opacity">

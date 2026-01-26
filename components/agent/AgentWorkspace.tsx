@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { ArrowLeft, Plus, Phone, PhoneOff, LogOut, Search, MoreVertical, Mic, Send, Edit3, Clipboard, ShieldCheck, ChevronDown, CheckCircle, Bell, X, ChevronUp, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Phone, PhoneOff, LogOut, Search, MoreVertical, Mic, Send, Edit3, Clipboard, ChevronDown, CheckCircle, Bell, X, ChevronUp, Save, Loader2, ShieldCheck } from 'lucide-react';
 import { Badge } from '../Badge';
 import { Button } from '../Button';
 import { Input } from '../Input';
 import { Message } from '../../types';
+import { AICopilotPanel } from './AICopilotPanel';
+import { useAgentStore } from '../../lib/store/agentStore';
+import { type AIProposal } from '../../types/api';
 import '../../styles/animations.css';
 
 interface Props {
   onBack: () => void;
+  customerId?: string;
 }
 
-export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
+export const AgentWorkspace: React.FC<Props> = ({ onBack, customerId = 'customer-1' }) => {
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', sender: 'user', text: '대출 상담 받고 싶습니다.', timestamp: '14:23' },
     { 
@@ -130,6 +134,28 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
     );
   });
   HighlightText.displayName = 'HighlightText';
+
+  // AI 제안 클릭 핸들러
+  const handleProposalClick = (proposal: AIProposal) => {
+    let messageText = '';
+
+    switch (proposal.type) {
+      case 'next_best_action':
+      case 'script':
+        messageText = proposal.description;
+        break;
+      case 'knowledge':
+        messageText = `[지식] ${proposal.title}: ${proposal.description}`;
+        break;
+      case 'warning':
+        messageText = `[주의] ${proposal.description}`;
+        break;
+      default:
+        messageText = proposal.description;
+    }
+
+    setInputText(messageText);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden relative">
@@ -415,24 +441,11 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack }) => {
                    </div>
                 </div>
 
-                {/* AI Suggestion */}
-                <div>
-                   <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                      <ShieldCheck size={16} className="text-primary" /> AI 제안
-                   </h3>
-                   <div className="bg-[#E6F2FF] border border-blue-100 p-4 rounded-xl relative overflow-hidden">
-                      <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">98% 일치</div>
-                      <h4 className="font-bold text-primary mb-1">직장인 우대 대출</h4>
-                      <p className="text-xs text-gray-600 mb-3">신용점수 우수 직장인을 위한 최적 금리 상품</p>
-                      <Button 
-                        size="sm" 
-                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] transition-transform"
-                        onClick={() => setInputText("직장인 우대 대출 상품 가입을 제안합니다.")}
-                      >
-                        가입 제안 (메시지 입력)
-                      </Button>
-                   </div>
-                </div>
+                {/* AI Copilot Panel */}
+                <AICopilotPanel
+                  customerId={customerId}
+                  onProposalApply={handleProposalClick}
+                />
 
                 {/* Memo */}
                 <div>

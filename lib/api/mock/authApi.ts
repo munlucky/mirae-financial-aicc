@@ -299,11 +299,20 @@ const delay = (ms: number): Promise<void> => {
 };
 
 /**
+ * Unicode-safe base64 encoding
+ */
+const toBase64 = (str: string): string => {
+  const bytes = new TextEncoder().encode(str);
+  const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
+  return btoa(binString);
+};
+
+/**
  * 액세스 토큰 생성 (간단 구현 - 실제로는 JWT 사용)
  */
 const generateToken = (user: typeof mockUsers[0]): string => {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(
+  const header = toBase64(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = toBase64(
     JSON.stringify({
       sub: user.id,
       name: user.name,
@@ -312,7 +321,7 @@ const generateToken = (user: typeof mockUsers[0]): string => {
       exp: Math.floor(Date.now() / 1000) + 3600, // 1시간
     })
   );
-  const signature = btoa('mock-signature');
+  const signature = toBase64('mock-signature');
   return `${header}.${payload}.${signature}`;
 };
 
