@@ -27,3 +27,6 @@ dist-ssr
 .history
 .claude/skills/*/output-patch.yaml
 .claude.backup-*
+
+# Windows artifact
+nul
