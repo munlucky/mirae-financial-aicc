@@ -3,12 +3,12 @@ import { UserRole } from './types';
 import { useChatStore } from './lib/store/chatStore';
 import { useAgentStore } from './lib/store/agentStore';
 
-// 코드 분할: 동적 import
-const CustomerLogin = lazy(() => import('./components/customer/CustomerLogin'));
-const ChatHome = lazy(() => import('./components/customer/ChatHome'));
-const ChatDetail = lazy(() => import('./components/customer/ChatDetail'));
-const AgentDashboard = lazy(() => import('./components/agent/AgentDashboard'));
-const AgentWorkspace = lazy(() => import('./components/agent/AgentWorkspace'));
+// 코드 분할: 동적 import (named export 지원)
+const CustomerLogin = lazy(() => import('./components/customer/CustomerLogin').then(m => ({ default: m.CustomerLogin })));
+const ChatHome = lazy(() => import('./components/customer/ChatHome').then(m => ({ default: m.ChatHome })));
+const ChatDetail = lazy(() => import('./components/customer/ChatDetail').then(m => ({ default: m.ChatDetail })));
+const AgentDashboard = lazy(() => import('./components/agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })));
+const AgentWorkspace = lazy(() => import('./components/agent/AgentWorkspace').then(m => ({ default: m.AgentWorkspace })));
 
 // App State Management
 enum Screen {

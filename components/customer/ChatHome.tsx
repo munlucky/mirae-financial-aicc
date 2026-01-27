@@ -1,6 +1,8 @@
-import React, { useEffect } from 'react';
-import { Search, Menu, Settings, MessageCircle, Clock, Plus, BarChart, FileText, Shield, ChevronRight, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Menu, Settings, MessageCircle, Clock, Plus, BarChart, FileText, Shield, ChevronRight, AlertCircle, Info } from 'lucide-react';
 import { useChatStore } from '../../lib/store/chatStore';
+import { Modal } from '../Modal';
+import { Button } from '../Button';
 
 interface Props {
   onSelectChat: (id: string) => void;
@@ -24,6 +26,7 @@ const formatTime = (isoString: string): string => {
 
 export const ChatHome: React.FC<Props> = ({ onSelectChat }) => {
   const { sessions, isLoading, error, loadSessions, createSession } = useChatStore();
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
   // 컴포넌트 마운트 시 세션 목록 로드
   useEffect(() => {
@@ -42,8 +45,8 @@ export const ChatHome: React.FC<Props> = ({ onSelectChat }) => {
           대화
         </h1>
         <div className="flex items-center gap-4 text-gray-600">
-          <Search size={24} className="cursor-pointer hover:text-primary" />
-          <Menu size={24} className="cursor-pointer hover:text-primary" />
+          <Search size={24} className="cursor-pointer hover:text-primary" onClick={() => setShowComingSoonModal(true)} />
+          <Menu size={24} className="cursor-pointer hover:text-primary" onClick={() => setShowComingSoonModal(true)} />
         </div>
       </header>
 
@@ -95,7 +98,7 @@ export const ChatHome: React.FC<Props> = ({ onSelectChat }) => {
                   { icon: <Shield size={24} className="text-orange" />, label: '보안센터' },
                   { icon: <MessageCircle size={24} className="text-blue-500" />, label: '자주묻는질문' },
                 ].map((item, idx) => (
-                  <div key={idx} className="flex-shrink-0 w-[72px] h-[80px] bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-gray-100 cursor-pointer transition-colors">
+                  <div key={idx} className="flex-shrink-0 w-[72px] h-[80px] bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-gray-100 cursor-pointer transition-colors" onClick={() => setShowComingSoonModal(true)}>
                     {item.icon}
                     <span className="text-[11px] font-medium text-gray-600">{item.label}</span>
                   </div>
@@ -152,6 +155,27 @@ export const ChatHome: React.FC<Props> = ({ onSelectChat }) => {
       >
         <Plus size={28} />
       </button>
+
+      {/* 추후 개발 안내 모달 */}
+      <Modal
+        isOpen={showComingSoonModal}
+        onClose={() => setShowComingSoonModal(false)}
+        title="알림"
+      >
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <Info className="text-blue-600" size={24} />
+          </div>
+          <p className="text-gray-700">해당 기능은 추후 개발 예정입니다.</p>
+          <Button
+            onClick={() => setShowComingSoonModal(false)}
+            className="w-full"
+            size="lg"
+          >
+            확인
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

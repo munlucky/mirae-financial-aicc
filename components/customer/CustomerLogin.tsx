@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../Button';
 import { Input } from '../Input';
-import { Eye, EyeOff, User, Lock, Fingerprint, AlertCircle } from 'lucide-react';
+import { Modal } from '../Modal';
+import { Eye, EyeOff, User, Lock, Fingerprint, AlertCircle, Info } from 'lucide-react';
 
 // 입력 유효성 검증 함수
 const validateEmail = (email: string): boolean => {
@@ -28,10 +29,11 @@ interface Props {
 
 export const CustomerLogin: React.FC<Props> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('test@example.com');
+  const [password, setPassword] = useState('test1234');
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +142,7 @@ export const CustomerLogin: React.FC<Props> = ({ onLogin }) => {
               <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" />
               <span className="text-xs text-gray-600 font-medium">아이디 저장</span>
             </label>
-            <a href="#" className="text-xs text-primary font-medium hover:underline">비밀번호 찾기</a>
+            <button type="button" onClick={() => setShowComingSoonModal(true)} className="text-xs text-primary font-medium hover:underline">비밀번호 찾기</button>
           </div>
 
           <Button type="submit" className="w-full mt-2" size="lg">
@@ -160,22 +162,55 @@ export const CustomerLogin: React.FC<Props> = ({ onLogin }) => {
           </div>
 
           <div className="mt-6 flex justify-center gap-4">
-             <button className="w-11 h-11 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors">
+             <button
+               type="button"
+               onClick={() => setShowComingSoonModal(true)}
+               className="w-11 h-11 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors"
+             >
                 <Fingerprint className="text-primary" size={24} />
              </button>
-             <button className="w-11 h-11 rounded-full bg-[#FAE100] border border-[#FAE100] flex items-center justify-center hover:brightness-95 transition-colors font-bold text-[#371D1E]">
+             <button
+               type="button"
+               onClick={() => setShowComingSoonModal(true)}
+               className="w-11 h-11 rounded-full bg-[#FAE100] border border-[#FAE100] flex items-center justify-center hover:brightness-95 transition-colors font-bold text-[#371D1E]"
+             >
                 K
              </button>
-             <button className="w-11 h-11 rounded-full bg-[#03C75A] border border-[#03C75A] flex items-center justify-center hover:brightness-95 transition-colors font-bold text-white">
+             <button
+               type="button"
+               onClick={() => setShowComingSoonModal(true)}
+               className="w-11 h-11 rounded-full bg-[#03C75A] border border-[#03C75A] flex items-center justify-center hover:brightness-95 transition-colors font-bold text-white"
+             >
                 N
              </button>
           </div>
         </div>
-        
+
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">계정이 없으신가요? <a href="#" className="text-primary font-bold hover:underline">회원가입</a></p>
+          <p className="text-xs text-gray-500">계정이 없으신가요? <button type="button" onClick={() => setShowComingSoonModal(true)} className="text-primary font-bold hover:underline">회원가입</button></p>
         </div>
       </div>
+
+      {/* 추후 개발 안내 모달 */}
+      <Modal
+        isOpen={showComingSoonModal}
+        onClose={() => setShowComingSoonModal(false)}
+        title="알림"
+      >
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <Info className="text-blue-600" size={24} />
+          </div>
+          <p className="text-gray-700">해당 기능은 추후 개발 예정입니다.</p>
+          <Button
+            onClick={() => setShowComingSoonModal(false)}
+            className="w-full"
+            size="lg"
+          >
+            확인
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

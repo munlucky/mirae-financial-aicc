@@ -11,6 +11,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://esm.sh" />
 
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0F172A',
+                        'primary-hover': '#1E293B',
+                        'primary-active': '#334155',
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- SEO: 설명 -->
     <meta name="description" content="미래금융 그룹 AI 고객센터터(AICC) - 스마트한 상담 경험" />
     <meta name="keywords" content="AI 고객센터, 금융 상담, 대출 상담, 챗봇" />
@@ -26,3 +42,9 @@
     <meta name="msapplication-TileColor" content="#0F172A" />
 
     <title>미래금융 AICC</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { ArrowLeft, MoreVertical, Info, Mic, Send, Volume2, ChevronDown, Check, CheckCheck, Pause, Square, Paperclip, FileText, X, Play, StopCircle, Image as ImageIcon, Music, File, Download, AlertCircle } from 'lucide-react';
 import { Message, VoiceState } from '../../types';
 import { Badge } from '../Badge';
+import { Modal } from '../Modal';
+import { Button } from '../Button';
 import {
   READ_RECEIPT_DELAY,
   AI_RESPONSE_BASE_DELAY,
@@ -83,6 +85,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [recognitionError, setRecognitionError] = useState<string | null>(null);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sttServiceRef = useRef<ReturnType<typeof createSpeechRecognition> | null>(null);
@@ -345,8 +348,8 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
           </div>
         </div>
         <div className="flex gap-1">
-          <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600"><Info size={24} /></button>
-          <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600"><MoreVertical size={24} /></button>
+          <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600" onClick={() => setShowComingSoonModal(true)}><Info size={24} /></button>
+          <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600" onClick={() => setShowComingSoonModal(true)}><MoreVertical size={24} /></button>
         </div>
       </header>
 
@@ -377,7 +380,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
                       <img src={msg.attachment.url} alt="Attached" className="w-full h-auto object-cover max-h-48" />
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between">
                          <p className="text-white text-xs truncate max-w-[80%]">{msg.attachment.name}</p>
-                         <button className="p-1 text-white hover:text-emerald-300"><Download size={14} /></button>
+                         <button className="p-1 text-white hover:text-emerald-300" onClick={() => setShowComingSoonModal(true)}><Download size={14} /></button>
                       </div>
                     </div>
                   ) : (
@@ -621,7 +624,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
             {voiceState === VoiceState.PAUSED ? <Pause size={22} /> : <Mic size={22} />}
           </button>
           
-          <button 
+          <button
             onClick={() => handleSend('text')}
             disabled={!inputValue.trim()}
             className="w-11 h-11 flex items-center justify-center rounded-xl bg-primary text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-primary-hover transition-colors"
@@ -630,6 +633,27 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
           </button>
         </div>
       </div>
+
+      {/* 추후 개발 안내 모달 */}
+      <Modal
+        isOpen={showComingSoonModal}
+        onClose={() => setShowComingSoonModal(false)}
+        title="알림"
+      >
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <Info className="text-blue-600" size={24} />
+          </div>
+          <p className="text-gray-700">해당 기능은 추후 개발 예정입니다.</p>
+          <Button
+            onClick={() => setShowComingSoonModal(false)}
+            className="w-full"
+            size="lg"
+          >
+            확인
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

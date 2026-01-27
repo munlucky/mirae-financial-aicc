@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
-import { Bell, Menu, User, Briefcase, TrendingUp, TrendingDown, Star, Award, Users, AlertCircle, Clock } from 'lucide-react';
+import { Bell, Menu, User, Briefcase, TrendingUp, TrendingDown, Star, Award, Users, AlertCircle, Clock, Info } from 'lucide-react';
 import { useAgentStore } from '../../lib/store/agentStore';
 import { useAuthStore } from '../../lib/store/authStore';
+import { Modal } from '../Modal';
+import { Button } from '../Button';
 import '../../styles/animations.css';
 
 function ClockIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
@@ -13,6 +15,7 @@ interface Props {
 
 export const AgentDashboard: React.FC<Props> = ({ onNavigateWorkspace }) => {
   const [showNotification, setShowNotification] = useState(false);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
   // Store에서 데이터 가져오기
   const {
@@ -115,7 +118,7 @@ export const AgentDashboard: React.FC<Props> = ({ onNavigateWorkspace }) => {
           <h1 className="text-xl font-bold text-gray-800">상담원 대시보드</h1>
         </div>
         <div className="flex items-center gap-4">
-          <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full">
+          <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full" onClick={() => setShowComingSoonModal(true)}>
             <Bell size={20} className={showNotification ? 'animate-swing text-red' : ''} />
             {getWaitingCustomers().length > 0 && (
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red rounded-full border-2 border-white"></span>
@@ -327,6 +330,27 @@ export const AgentDashboard: React.FC<Props> = ({ onNavigateWorkspace }) => {
           </div>
         )}
       </main>
+
+      {/* 추후 개발 안내 모달 */}
+      <Modal
+        isOpen={showComingSoonModal}
+        onClose={() => setShowComingSoonModal(false)}
+        title="알림"
+      >
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <Info className="text-blue-600" size={24} />
+          </div>
+          <p className="text-gray-700">해당 기능은 추후 개발 예정입니다.</p>
+          <Button
+            onClick={() => setShowComingSoonModal(false)}
+            className="w-full"
+            size="lg"
+          >
+            확인
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };
