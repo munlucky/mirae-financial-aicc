@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { ArrowLeft, MoreVertical, Info, Mic, Send, Volume2, ChevronDown, Check, CheckCheck, Pause, Square, Paperclip, FileText, X, Play, StopCircle, Image as ImageIcon, Music, File, Download, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Info, Mic, Send, Volume2, ChevronDown, Check, CheckCheck, Pause, Square, Paperclip, FileText, X, Play, StopCircle, Image as ImageIcon, Music, File, Download, AlertCircle, Cpu } from 'lucide-react';
 import { Message, VoiceState } from '../../types';
 import { Badge } from '../Badge';
 import { Modal } from '../Modal';
@@ -13,6 +13,7 @@ import {
 } from '../../lib/constants/timing';
 import { createSpeechRecognition } from '../../lib/services/speechRecognition';
 import { createSpeechSynthesis } from '../../lib/services/speechSynthesis';
+import { useModelInference } from '@/src/hooks/useModelInference';
 import type { SpeechRecognitionResult } from '../../types/speech';
 import '../../styles/animations.css';
 
@@ -91,6 +92,9 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
   const sttServiceRef = useRef<ReturnType<typeof createSpeechRecognition> | null>(null);
   const ttsServiceRef = useRef<ReturnType<typeof createSpeechSynthesis> | null>(null);
 
+  // Web Worker AI 모델 통합
+  const { status: aiStatus, progress: aiProgress, error: aiError, generate } = useModelInference();
+
   // Initialize Speech Services
   useEffect(() => {
     // Initialize STT service
@@ -167,9 +171,9 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
 
   useEffect(scrollToBottom, [messages, voiceState, isTyping]);
 
-  const handleSend = (type: 'text' | 'audio' = 'text') => {
+  const handleSend = async (type: 'text' | 'audio' = 'text') => {
     if (!inputValue.trim() && type === 'text') return;
-    
+
     // For audio messages, we assume the inputValue is the transcription
     const textContent = inputValue.trim() || (type === 'audio' ? '음성 메시지' : '');
 
@@ -181,7 +185,7 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
       read: false,
       hasAudio: type === 'audio'
     };
-    
+
     setMessages(prev => [...prev, newMessage]);
     setInputValue('');
     setVoiceState(VoiceState.IDLE); // Reset voice state if sending audio
@@ -191,21 +195,64 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
     setTimeout(() => {
        setMessages(prev => prev.map(m => m.id === newMessage.id ? { ...m, read: true } : m));
     }, READ_RECEIPT_DELAY);
-    
-    // AI Auto-Reply Logic
-    setTimeout(() => {
-      const aiResponse = getSmartResponse(newMessage.text);
+
+    // AI Auto-Reply Logic (Web Worker AI + Fallback)
+    try {
+      let responseText: string;
+      let quickReplies: string[] | undefined;
+
+      console.log('[ChatDetail] AI Status:', aiStatus);
+
+      // 1. Web Worker AI 시도
+      if (aiStatus === 'ready') {
+        try {
+          console.log('[ChatDetail] Using Web Worker AI');
+          responseText = await generate(newMessage.text);
+          quickReplies = undefined; // AI 생성 응답은 기본 quickReplies 없음
+          console.log('[ChatDetail] AI response received:', responseText);
+        } catch (aiErr) {
+          console.warn('[ChatDetail] AI failed, using fallback:', aiErr);
+          // AI 실패 시 폴백
+          const fallback = getSmartResponse(newMessage.text);
+          responseText = fallback.text;
+          quickReplies = fallback.quickReplies;
+        }
+      } else {
+        console.log('[ChatDetail] Model not ready, using fallback');
+        // 모델이 준비되지 않은 경우 바로 폴백
+        const fallback = getSmartResponse(newMessage.text);
+        responseText = fallback.text;
+        quickReplies = fallback.quickReplies;
+      }
+
+      // 기존 지연 유지 (1-3초)
+      await new Promise(resolve =>
+        setTimeout(resolve, AI_RESPONSE_BASE_DELAY + Math.random() * AI_RESPONSE_RANDOM_DELAY)
+      );
 
       setIsTyping(false);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        text: aiResponse.text,
+        text: responseText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         confidence: 'high',
-        quickReplies: aiResponse.quickReplies
+        quickReplies
       }]);
-    }, AI_RESPONSE_BASE_DELAY + Math.random() * AI_RESPONSE_RANDOM_DELAY); 
+    } catch (err) {
+      console.error('[ChatDetail] Error in AI response:', err);
+      // 에러 시 폴백
+      const fallback = getSmartResponse(newMessage.text);
+      setIsTyping(false);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai',
+        text: fallback.text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        confidence: 'high',
+        quickReplies: fallback.quickReplies
+      }]);
+    }
   };
 
   // File Attachment Logic with Image Preview
@@ -352,6 +399,39 @@ export const ChatDetail: React.FC<Props> = ({ onBack }) => {
           <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600" onClick={() => setShowComingSoonModal(true)}><MoreVertical size={24} /></button>
         </div>
       </header>
+
+      {/* AI 상태 표시 */}
+      {aiStatus === 'loading' && (
+        <div className="px-3 py-2 bg-blue-50 border-b border-blue-100 flex items-center gap-2">
+          <Cpu size={16} className="text-blue-600 animate-spin" />
+          <span className="text-xs text-blue-700 font-medium">
+            AI 모델 로딩 중... {aiProgress}%
+          </span>
+        </div>
+      )}
+
+      {aiStatus === 'ready' && (
+        <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+          <Cpu size={16} className="text-emerald-600" />
+          <span className="text-xs text-emerald-700 font-medium">AI 준비 완료</span>
+        </div>
+      )}
+
+      {aiStatus === 'error' && (
+        <div className="px-3 py-2 bg-orange-50 border-b border-orange-100 flex items-center gap-2">
+          <AlertCircle size={16} className="text-orange-600" />
+          <span className="text-xs text-orange-700 font-medium">
+            AI 에러: {aiError} (폴백 모드 작동 중)
+          </span>
+        </div>
+      )}
+
+      {aiStatus === 'generating' && (
+        <div className="px-3 py-2 bg-purple-50 border-b border-purple-100 flex items-center gap-2">
+          <Cpu size={16} className="text-purple-600 animate-pulse" />
+          <span className="text-xs text-purple-700 font-medium">AI 답변 생성 중...</span>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto custom-scroll p-4 bg-gray-50/50">

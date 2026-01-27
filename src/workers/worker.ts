@@ -14,10 +14,12 @@ let generator = null;
 self.onmessage = async (event: MessageEvent) => {
   const { action, text } = event.data;
 
+  console.log('[Worker] Received:', { action, text });
+
   if (action === 'init') {
     try {
-      console.log(`모델 로딩 시작: ${MODEL_NAME}`);
       self.postMessage({ status: 'progress', progress: 0, message: 'ONNX Runtime 초기화 중...' });
+      console.log('[Worker] Initializing model:', MODEL_NAME);
 
       generator = await pipeline('text2text-generation', MODEL_NAME, {
         quantized: true,
@@ -41,15 +43,17 @@ self.onmessage = async (event: MessageEvent) => {
       });
 
       self.postMessage({ status: 'ready', progress: 1 });
-      console.log('모델 로딩 완료');
-    } catch (error: any) {
-      console.error('모델 로딩 에러:', error);
+      console.log('[Worker] Model ready!');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      self.postMessage({ status: 'error', error: errorMessage });
       self.postMessage({ status: 'error', error: error.message || error.toString() });
     }
   }
 
   if (action === 'generate') {
     try {
+      console.log('[Worker] Generating text for:', text);
       self.postMessage({ status: 'generating' });
 
       const output = await generator(text, {
@@ -57,10 +61,15 @@ self.onmessage = async (event: MessageEvent) => {
         temperature: 0.7
       });
 
-      self.postMessage({ status: 'complete', output });
-    } catch (error: any) {
-      console.error('생성 에러:', error);
-      self.postMessage({ status: 'error', error: error.message || error.toString() });
+      // text2text-generation 결과 형식: [{ generated_text: string }]
+      const generatedText = output[0]?.generated_text || text;
+      console.log('[Worker] Generated:', generatedText);
+
+      self.postMessage({ status: 'complete', output: generatedText });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Generation failed';
+      console.error('[Worker] Generate error:', error);
+      self.postMessage({ status: 'error', error: errorMessage });
     }
   }
 };
