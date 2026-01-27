@@ -1,1 +1,85 @@
-{"entities": [], "relations": []}
+{
+  "entities": [
+    {
+      "name": "mirae-financial-aicc",
+      "type": "project",
+      "observations": [
+        "미래금융그룹 AI 고객센터 (AICC) 프론트엔드 프로젝트",
+        "기술 스택: Vite 6.2.0 + React 19.2.3 + TypeScript 5.8.2",
+        "상태 관리: Zustand 4.5.7",
+        "스타일링: Tailwind CSS 3.x (CDN)",
+        "테스트: Vitest 4.0.18 + Testing Library",
+        "현재 브랜치: main",
+        "마지막 커밋: de95384 클로드 세팅 동기화",
+        "상태: clean (uncommitted changes 없음)",
+        "저장일: 2026-01-27"
+      ]
+    },
+    {
+      "name": "project-structure",
+      "type": "architecture",
+      "observations": [
+        "components/customer/: 고객용 React 컴포넌트",
+        "components/agent/: 상담사용 React 컴포넌트",
+        "lib/api/: API 클라이언트, Mock API",
+        "lib/services/: 비즈니스 로직",
+        "lib/store/: Zustand 스토어",
+        "lib/utils/: 유틸리티",
+        "types/: TypeScript 타입"
+      ]
+    },
+    {
+      "name": "security-rules",
+      "type": "policy",
+      "observations": [
+        "API 키: 절대 클라이언트 번들에 포함 금지, 백엔드 프록시 서버 사용 권장",
+        "환경 변수는 VITE_ prefix만 사용 (Vite 자동 처리)",
+        "민감정보 저장: LocalStorage에 토큰 저장 금지, 대신 HttpOnly, Secure, SameSite 쿠키 사용",
+        "마스킹 처리: lib/services/masking.ts 사용 (전화번호, 계좌번호, 카드번호, 주민번호)"
+      ]
+    },
+    {
+      "name": "code-quality-rules",
+      "type": "policy",
+      "observations": [
+        "console.log 금지: 대신 lib/utils/logger.ts 사용",
+        "메모리 누수 방지: store에 cleanup() 함수 필수, useEffect cleanup 함수 필수",
+        "불변성 패턴: spread operator 사용, push 대신 [...arr, item]"
+      ]
+    },
+    {
+      "name": "verification-commands",
+      "type": "documentation",
+      "observations": [
+        "빌드 확인: npm run build (기준: 빌드 성공, 빌드 시간 < 10초)",
+        "타입 체크: npx tsc --noEmit (기준: 타입 에러 0개)",
+        "테스트 실행: npm run test (기준: 모든 테스트 PASS)",
+        "테스트 커버리지: npm run test:coverage (기준: 80% 이상)",
+        "개발 서버: npm run dev (기준: http://localhost:3000 접속 가능)"
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "from": "mirae-financial-aicc",
+      "to": "project-structure",
+      "type": "has"
+    },
+    {
+      "from": "mirae-financial-aicc",
+      "to": "security-rules",
+      "type": "follows"
+    },
+    {
+      "from": "mirae-financial-aicc",
+      "to": "code-quality-rules",
+      "type": "follows"
+    },
+    {
+      "from": "mirae-financial-aicc",
+      "to": "verification-commands",
+      "type": "uses"
+    }
+  ],
+  "lastUpdated": "2026-01-27"
+}
