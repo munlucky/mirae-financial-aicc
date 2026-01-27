@@ -1,94 +1,59 @@
 schemaVersion: "1.0"
 request:
-  userMessage: "AI Copilot (요약, NBA) 기능 구현"
-  taskType: feature
+  userMessage: "공식문서가 이거야 확인하고 다시 개선해줘."
+  taskType: modification
   keywords:
-    - 구현
-    - AI
-    - Copilot
-    - 요약
-    - NBA
-    - react
+    - 공식문서
+    - 확인
+    - 개선
 repo:
   gitBranch: "main"
   gitStatus: "dirty"
-  openFiles: []
+  openFiles:
+    - .claude/README.md
+    - .claude/CLAUDE.md
+    - .claude/skills/moonshot-orchestrator/SKILL.md
+    - .claude/rules/workflow.md
+    - .claude/rules/quality.md
   changedFiles:
-    # Implementation runner changes (2026-01-26)
-    - lib/services/errorTracking.ts    # console.warn → logger.warn
-    - lib/services/encryption.ts       # console.error → logger.error
-    - lib/services/speechSynthesis.ts  # console.warn → logger.warn
-    - lib/services/speechRecognition.ts # (no changes needed)
-    - lib/api/mock/authApi.ts          # Unicode-safe base64 encoding
-    - lib/api/client.test.ts           # Enhanced tests (T4-T6)
-    - lib/api/mock/api.integration.test.ts  # Enhanced tests (T7-T9) - 9/9 PASS
-    - lib/store/chatStore.test.ts      # Enhanced tests (T10-T11)
-    - components/customer/ChatHome.test.tsx   # Enhanced tests (T12)
-    - components/customer/ChatDetail.test.tsx  # Enhanced tests (T13)
-    - components/agent/AgentDashboard.test.tsx # Enhanced tests (T14)
-    - components/agent/AgentWorkspace.test.tsx # Enhanced tests (T15)
-    - .claude/docs/tasks/aicc-frontend-build/context.md  # Updated with completion status
-    - .claude/skills/implementation-runner/output-patch.yaml
+    - .claude/CLAUDE.md
+    - .claude/README.md
+    - install-claude.sh
+    - .claude/rules/agents/agent-definition.md
+    - .claude/rules/basic-principles.md
+    - .claude/rules/communication.md
+    - .claude/rules/context-management.md
+    - .claude/rules/docs/documentation.md
+    - .claude/rules/output-format.md
+    - .claude/rules/quality.md
+    - .claude/rules/skills/skill-definition.md
+    - .claude/rules/workflow.md
 signals:
-  hasContextMd: true
-  hasPendingQuestions: false  # User provided explicit answers
-  requirementsClear: true      # Clarified by user responses
+  hasContextMd: false
+  hasPendingQuestions: false
+  requirementsClear: true
   implementationReady: true
-  implementationComplete: true # Implementation completed
-  hasMockImplementation: true
-  apiSpecConfirmed: true       # Mock API only, backend excluded
-  reactProject: true
-  complexity: complex
+  implementationComplete: true
+  hasMockImplementation: false
+  apiSpecConfirmed: false
 estimates:
-  estimatedFiles: 12-22
-  estimatedLines: 310-620
-  estimatedTime: 7h
-phase: implementation
-complexity: complex
-missingInfo: []  # All resolved by user responses
-
-# User captured preferences
-userPreferences:
-  prioritySequence: "CRITICAL->HIGH"
-  securityApproach: "environment-variables-only"
-  testScope: "all-12-tests"
-  mockApiIntegration: "all-components-simultaneous"
-  backendExcluded: true
-  sequentialExecution: true
+  estimatedFiles: 1
+  estimatedLines: 90
+  estimatedTime: "30m"
+phase: verification
+complexity: simple
+missingInfo: []
 decisions:
-  recommendedAgents:
-    - implementation-runner
-    - completion-verifier
-    - codex-review-code
-    - efficiency-tracker
-    - session-logger
+  recommendedAgents: []
   skillChain:
-    - implementation-runner        # Execute implementation (frontend only, no backend)
-    - completion-verifier          # Verify with acceptance tests (all 12 tests)
-    - codex-review-code            # Code quality review
-    - efficiency-tracker           # Track workflow status
-    - session-logger               # Log development session
-  parallelGroups:
-    - - efficiency-tracker
-      - session-logger
+    - implementation-runner
+    - verify-changes.sh
+  parallelGroups: []
 artifacts:
-  tasksRoot: ".claude/docs/tasks"
-  contextDocPath: ".claude/docs/tasks/ai-copilot/context.md"
+  contextDocPath: .claude/docs/tasks/claude-memory-docs/context.md
   verificationScript: .claude/agents/verification/verify-changes.sh
-tokenBudget:
-  specSummaryTrigger: 2000
-  splitTrigger: 5
-  contextMaxTokens: 8000
-  warningThreshold: 0.8
 notes:
-  - "phase=implementation (COMPLETED, 83% pass rate achieved)"
-  - "chain=complex-simplified (no fork, sequential execution)"
-  - "CRITICAL tasks completed: console.log removed, security fixed, memory leak verified"
-  - "HIGH tasks completed: PROJECT.md exists, 12 tests written, Mock API integrated"
-  - "Tests: 63/76 PASS (83%) - exceeds 80% target"
-  - "Integration tests: 9/9 PASS (100% - T4-T15)"
-  - "Changed files: 13 (service fixes, authApi Unicode fix, 6 test files, docs)"
-  - "Scope: Frontend only, backend excluded"
-  - "Remaining failures: chatStore mocking (7), component rendering (6)"
-  - "taskType=feature, confidence=high"
-  - "tech-stack: React + Vite + TypeScript"
+  - "taskType=modification, confidence=medium"
+  - "complexity=simple, estimated=heuristic"
+  - "implementation: update README with official memory guidance"
+  - "verification: not run"

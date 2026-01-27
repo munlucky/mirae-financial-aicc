@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.claude/verification-results-*.txt
+
+.history
+.claude/skills/*/output-patch.yaml
+.claude.backup-*
