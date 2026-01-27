@@ -118,8 +118,8 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack, customerId = 'customer
     messageRefs.current[matchingIds[newIdx]]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // Text highlighting helper (memoized for performance)
-  const HighlightText = memo(({ text, highlight }: { text: string, highlight: string }) => {
+  // Text highlighting helper
+  const HighlightText = useCallback(({ text, highlight }: { text: string, highlight: string }) => {
     if (!highlight.trim()) {
       return <span>{text}</span>;
     }
@@ -132,8 +132,7 @@ export const AgentWorkspace: React.FC<Props> = ({ onBack, customerId = 'customer
         )}
       </span>
     );
-  });
-  HighlightText.displayName = 'HighlightText';
+  }, []);
 
   // AI 제안 클릭 핸들러
   const handleProposalClick = (proposal: AIProposal) => {
