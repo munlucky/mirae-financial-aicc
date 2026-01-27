@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      fs: {
+        strict: false
+      }
     },
     plugins: [react()],
     // API 키는 클라이언트 번들에 포함되지 않도록 제거
