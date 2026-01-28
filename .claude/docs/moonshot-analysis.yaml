@@ -1,26 +1,33 @@
 schemaVersion: "1.0"
 request:
-  userMessage: "WebGPU를 사용하는 웹워커를 세팅해서 AI상담사가 답변을 달아주는 기능 구현"
-  taskType: build
+  userMessage: "공식문서가 이거야 확인하고 다시 개선해줘."
+  taskType: modification
   keywords:
-    - WebGPU
-    - Web Worker
-    - transformers.js
-    - AI 상담사
-    - 브라우저 내 추론
+    - 공식문서
+    - 확인
+    - 개선
 repo:
   gitBranch: "main"
-  gitStatus: dirty
-  openFiles: []
+  gitStatus: "dirty"
+  openFiles:
+    - .claude/README.md
+    - .claude/CLAUDE.md
+    - .claude/skills/moonshot-orchestrator/SKILL.md
+    - .claude/rules/workflow.md
+    - .claude/rules/quality.md
   changedFiles:
-    - src/workers/modelWorker.js
-    - src/hooks/useModelInference.ts
-    - src/components/AIConsultant.tsx
-    - src/App.tsx
-    - src/main.tsx
-    - vite.config.ts
-    - index.html
-    - package.json
+    - .claude/CLAUDE.md
+    - .claude/README.md
+    - install-claude.sh
+    - .claude/rules/agents/agent-definition.md
+    - .claude/rules/basic-principles.md
+    - .claude/rules/communication.md
+    - .claude/rules/context-management.md
+    - .claude/rules/docs/documentation.md
+    - .claude/rules/output-format.md
+    - .claude/rules/quality.md
+    - .claude/rules/skills/skill-definition.md
+    - .claude/rules/workflow.md
 signals:
   hasContextMd: false
   hasPendingQuestions: false
@@ -29,26 +36,24 @@ signals:
   implementationComplete: true
   hasMockImplementation: false
   apiSpecConfirmed: false
-  reactProject: true
 estimates:
-  estimatedFiles: 9
-  estimatedLines: 300
-  estimatedTime: "1h"
-phase: done
-complexity: medium
+  estimatedFiles: 1
+  estimatedLines: 90
+  estimatedTime: "30m"
+phase: verification
+complexity: simple
 missingInfo: []
 decisions:
-  recommendedAgents:
+  recommendedAgents: []
+  skillChain:
     - implementation-runner
-  skillChain: []
+    - verify-changes.sh
   parallelGroups: []
 artifacts:
-  contextDocPath: ""
+  contextDocPath: .claude/docs/tasks/claude-memory-docs/context.md
   verificationScript: .claude/agents/verification/verify-changes.sh
 notes:
-  - "transformers.js 설치 완료 (@xenova/transformers)"
-  - "Web Worker 기반 모델 로딩/추론 구현"
-  - "React Hook으로 상태 관리 (loading, ready, generating, error)"
-  - "진행률 표시 UI 구현"
-  - "빌드 성공, dev server 실행 중 (localhost:3000)"
-  - "첫 모델 로딩 시 1-2분 소요 (브라우저 캐싱 이후 빠름)"
+  - "taskType=modification, confidence=medium"
+  - "complexity=simple, estimated=heuristic"
+  - "implementation: update README with official memory guidance"
+  - "verification: not run"
